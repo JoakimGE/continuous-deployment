@@ -8,10 +8,10 @@ I denne workshop'en skal vi jobbe med å etablere en deploy pipeline for en web-
 
 ## Oppgaver
 
-- [oppgave 1](./oppgave-1/README.md) (Start here)
-- [oppgave 2](./oppgave-2/README.md)
-- [oppgave 3](./oppgave-3/README.md)
-- [oppgave 4 (bonus)](./oppgave-4/README.md)
+- [Oppgave 1](./oppgave-1/README.md) (Start her)
+- [Oppgave 2](./oppgave-2/README.md)
+- [Oppgave 3](./oppgave-3/README.md)
+- [Oppgave 4 (bonus)](./oppgave-4/README.md)
 
 ## Ressruser
 
@@ -42,3 +42,5 @@ Emphasizes how lines of text should change.
 - this text was removed
 + and replaced with this text
 ```
+
+### [Gå til oppgave 1 :arrow_right:](../oppgave-2/README.md)
