@@ -13,16 +13,27 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+
       - name: Use Node.js 22.x
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
       - run: npm ci
       - run: npm run build
+
       - name: Upload static files as artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: code/dist
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Call webhook (POST)
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_SERVER_WEB_HOOK }}
+        run: |
+          curl -s -X POST -H 'Content-Type: application/json' \
+            -d '{"content":"Build status: ✅","username": "$GITHUB_REPOSITORY"}' \
+            "$WEBHOOK_URL"
