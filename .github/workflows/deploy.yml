@@ -30,10 +30,20 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Call webhook (POST)
+      - name: build success (POST)
+        if: success()
         env:
           WEBHOOK_URL: ${{ secrets.DISCORD_SERVER_WEB_HOOK }}
         run: |
           curl -s -X POST -H 'Content-Type: application/json' \
-            -d '{"content":"Build status: ✅","username": "$GITHUB_REPOSITORY"}' \
+            -d '{"content":"Build status: ✅","username": "$GITHUB_REPOSITORY_OWNER"}' \
+            "$WEBHOOK_URL"
+
+      - name: build failure (POST)
+        if: failure()
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_SERVER_WEB_HOOK }}
+        run: |
+          curl -s -X POST -H 'Content-Type: application/json' \
+            -d '{"content":"Build status: ❌","username": "$GITHUB_REPOSITORY_OWNER"}' \
             "$WEBHOOK_URL"
