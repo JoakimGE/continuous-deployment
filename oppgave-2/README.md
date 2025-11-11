@@ -295,12 +295,10 @@ jobs:
       - run: npm run build
       - run: npm run lint
       - run: npm run test
-
-+     - name: Archive artifacts
-+       uses: actions/upload-artifact@v4
-+       with:
-+         name: artifact
-+         path: ./code/dist
++      - name: Upload static files as artifact
++        uses: actions/upload-pages-artifact@v3 
++        with:
++          path: code/dist
 ```
 
 Commit og push endringen din til Github, og du skal se følgende output nederst på workflow-siden din. Dette er applikasjonen vår som har blitt bygget og er klar til å deployes.

@@ -23,7 +23,7 @@ Vi har nå mulighet til å deploye kode til Github Pages fra Github Actions :tad
 
 ## 3.2 - Deploy av web-applikasjon til Pages
 
-I YAML-filen vi har jobbet i før, legg til en ny jobb som heter `deploy`.
+I YAML-filen vi har jobbet i før, legg til ett nytt steg som vist under. Dette steget tar artifakten vi bygget i forrige steg og deployet dette til Github Pages.
 
 ```diff
 name: Build and deploy
@@ -47,37 +47,19 @@ jobs:
       - run: npm run build
       - run: npm run lint
       - run: npm run test
-
-      - name: Archive artifacts
-        uses: actions/upload-artifact@v4
+      - name: Upload static files as artifact
+        uses: actions/upload-pages-artifact@v3 
         with:
-          name: artifact
-          path: ./code/dist
-
-+  deploy:
-+    needs: build
-+    permissions:
-+      pages: write     
-+      id-token: write   
-+
-+    runs-on: ubuntu-latest
-+    steps:
+          path: code/dist
 +      - name: Deploy to GitHub Pages
 +        id: deployment
-+        artifact_name: artifact
-+        uses: actions/deploy-pages@v4 
++        uses: actions/deploy-pages@v4
 ```
 
-:pencil2: Sjekk at koden din er tilgjengelig på internett. Du finner lenke til Github Pages her:
-TOdo: Sett inn bilde. 
+:pencil2: Sjekk at koden din er tilgjengelig på internett. Du finner lenke til Github Pages ved å besøke "Settings" og videre til "Pages". 
+![alt text](pages_link.png)
 
-### Hva gjør deploy-jobben?
-
-Deploy-jobben kjører kun etter at build-jobben er fullført (`needs: build`). Dette sikrer at vi kun deployer når bygget har gått bra.
-
-Jobben må ha spesielle tillatelser for å kunne skrive til GitHub Pages og bruke ID-token for autentisering. Dette settes med `permissions`-seksjonen (Dvs. vi gir Action-kjøringen vår tilgang til å skrive til Github Pages). 
-
-Selve deploy-steget bruker `actions/deploy-pages@v4` som henter artifaktet vi lastet opp i build-jobben (ved å referere til `artifact_name: artifact`) og deployer dette til GitHub Pages.
+:tada: Du har nå deployet noe ut på internett, etter å ha kjørt automatiske sjekker på koden! 
 
 ## 3.3 - Splitt CI / CD pipeline og bruk av Github Releases
 
@@ -87,38 +69,78 @@ GitHub Releases lar deg markere viktige milepæler i prosjektet ditt ved å tagg
 
 Vi kan også trigge actions ved å lage en release. Dette fungerer bra, med at vi kan generere en changelog over koden vår, tagge commit vi deployer og deretter deploye koden vår ut til et miljø. 
 
-### 3.3.1 - Trigger deploy fra Github Releases
+## 3.3.1 - Egen jobb for kvalitetssjekker
 
-:pencil2: Fjern `deploy`-steget fra action filen du før har jobbet på. Fjern også steget `Archive artifacts`. 
+:pencil2: Rename `main.yaml` til `ci.yaml`. Denne filen skal nå kun inneholde kodesjekker, og ikke utføre deploy. 
+Den oppdaterte filen kan se slik ut: 
 
-TODO: legg inn eksempel
-
-:pencil2: Opprett en ny actions fil som heter `deploy.yaml`. Legg følgende innhold inn:
-
-```diff
-name: Deploy
-on: [push]
+```
+name: Build
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '**'
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./code
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js
+      - name: Use Node.js 22.x
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
       - run: npm ci
       - run: npm run build
-      - name: Archive artifacts
-        uses: actions/upload-artifact@v4
+      - run: npm run lint
+      - run: npm test
+```
+
+Denne filen tar nå å sjekker ut koden for å så kjøre kvalitetssjekker. 
+
+### 3.3.2 - Trigger deploy fra Github Releases
+
+:pencil2: Opprett en ny actions fil som heter `deploy.yaml`. Legg følgende innhold inn:
+
+```
+name: Deploy
+on:
+  release:
+    types: [created]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./code
+    permissions:
+      pages: write     
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
         with:
-          name: artifact
-          path: ./code/dist
+          node-version: 22.x
+      - run: npm ci
+      - run: npm run build
+      - name: Upload static files as artifact
+        uses: actions/upload-pages-artifact@v3 
+        with:
+          path: code/dist
       - name: Deploy to GitHub Pages
         id: deployment
-        artifact_name: artifact
         uses: actions/deploy-pages@v4
 ```
+
+### Hva gjør deploy-pipelineen?
+
+Deploy-pipelineen trigges kun når en release opprettes (`on: release: types: [created]`). Dette gir deg full kontroll over når koden din deployes til produksjon.
+
+Når pipelineen kjører, henter den ut koden fra den taggede releasen, installerer avhengigheter og bygger prosjektet. De kompilerte filene fra `code/dist`-mappen lastes deretter opp som et artifact til GitHub Pages med `upload-pages-artifact@v3`.
+
+Til slutt deployer `deploy-pages@v4` artifaktet til GitHub Pages, slik at den nye versjonen av applikasjonen blir tilgjengelig på internett. På denne måten sikrer du at kun godkjente og taggede versjoner av koden din når produksjon.
